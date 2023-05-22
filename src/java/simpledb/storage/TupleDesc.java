@@ -3,14 +3,17 @@ package simpledb.storage;
 import simpledb.common.Type;
 
 import java.io.Serializable;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
  * TupleDesc describes the schema of a tuple.
  */
 public class TupleDesc implements Serializable {
+
+    private List<TDItem> tdItemList = new ArrayList<>();
 
     /**
      * A help class to facilitate organizing the information of each field
@@ -44,8 +47,7 @@ public class TupleDesc implements Serializable {
      *         that are included in this TupleDesc
      */
     public Iterator<TDItem> iterator() {
-        // TODO: some code goes here
-        return null;
+        return tdItemList.iterator();
     }
 
     private static final long serialVersionUID = 1L;
@@ -60,7 +62,9 @@ public class TupleDesc implements Serializable {
      *                be null.
      */
     public TupleDesc(Type[] typeAr, String[] fieldAr) {
-        // TODO: some code goes here
+        for (int i = 0; i < typeAr.length; i++) {
+            tdItemList.add(new TDItem(typeAr[i], fieldAr[i]));
+        }
     }
 
     /**
@@ -71,15 +75,16 @@ public class TupleDesc implements Serializable {
      *               TupleDesc. It must contain at least one entry.
      */
     public TupleDesc(Type[] typeAr) {
-        // TODO: some code goes here
+        for (int i = 0; i < typeAr.length; i++) {
+            tdItemList.add(new TDItem(typeAr[i],""));
+        }
     }
 
     /**
      * @return the number of fields in this TupleDesc
      */
     public int numFields() {
-        // TODO: some code goes here
-        return 0;
+        return tdItemList.size();
     }
 
     /**
@@ -90,8 +95,11 @@ public class TupleDesc implements Serializable {
      * @throws NoSuchElementException if i is not a valid field reference.
      */
     public String getFieldName(int i) throws NoSuchElementException {
-        // TODO: some code goes here
-        return null;
+        if (i < tdItemList.size()) {
+            return tdItemList.get(i).fieldName;
+        } else {
+            throw new NoSuchElementException("i is not a valid field reference");
+        }
     }
 
     /**
@@ -103,8 +111,11 @@ public class TupleDesc implements Serializable {
      * @throws NoSuchElementException if i is not a valid field reference.
      */
     public Type getFieldType(int i) throws NoSuchElementException {
-        // TODO: some code goes here
-        return null;
+        if (i < tdItemList.size()) {
+            return tdItemList.get(i).fieldType;
+        } else {
+            throw new NoSuchElementException("i is not a valid field reference");
+        }
     }
 
     /**
@@ -115,8 +126,12 @@ public class TupleDesc implements Serializable {
      * @throws NoSuchElementException if no field with a matching name is found.
      */
     public int indexForFieldName(String name) throws NoSuchElementException {
-        // TODO: some code goes here
-        return 0;
+        for (int i = 0; i < tdItemList.size(); i++) {
+            if (tdItemList.get(i).fieldName.equals(name)) {
+                return i;
+            }
+        }
+        throw new NoSuchElementException("no field named " + name + " is found");
     }
 
     /**
@@ -125,7 +140,7 @@ public class TupleDesc implements Serializable {
      */
     public int getSize() {
         // TODO: some code goes here
-        return 0;
+        return tdItemList.size();
     }
 
     /**
@@ -137,8 +152,18 @@ public class TupleDesc implements Serializable {
      * @return the new TupleDesc
      */
     public static TupleDesc merge(TupleDesc td1, TupleDesc td2) {
-        // TODO: some code goes here
-        return null;
+        int mergedSize = td1.numFields() + td2.numFields();
+        Type[] mergedType = new Type[mergedSize];
+        String[] mergedField = new String[mergedSize];
+        for (int i = 0; i < td1.numFields(); i++) {
+            mergedType[i] = td1.tdItemList.get(i).fieldType;
+            mergedField[i] = td1.tdItemList.get(i).fieldName;
+        }
+        for (int i = td1.numFields(); i < mergedSize; i++) {
+            mergedType[i] = td2.tdItemList.get(i - td1.numFields()).fieldType;
+            mergedField[i] = td2.tdItemList.get(i - td1.numFields()).fieldName;
+        }
+        return new TupleDesc(mergedType, mergedField);
     }
 
     /**
