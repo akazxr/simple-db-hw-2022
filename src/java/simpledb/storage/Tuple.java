@@ -1,6 +1,8 @@
 package simpledb.storage;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -15,7 +17,7 @@ public class Tuple implements Serializable {
 
     private TupleDesc tupleDesc;
 
-    private List<Field> fields;
+    private Field[] fields;
 
     private static final long serialVersionUID = 1L;
 
@@ -23,10 +25,11 @@ public class Tuple implements Serializable {
      * Create a new tuple with the specified schema (type).
      *
      * @param td the schema of this tuple. It must be a valid TupleDesc
-     *           instance with at least one field.
+     * instance with at least one field.
      */
     public Tuple(TupleDesc td) {
         this.tupleDesc = td;
+        fields = new Field[td.numFields()];
     }
 
     /**
@@ -38,7 +41,7 @@ public class Tuple implements Serializable {
 
     /**
      * @return The RecordId representing the location of this tuple on disk. May
-     *         be null.
+     * be null.
      */
     public RecordId getRecordId() {
         return this.recordId;
@@ -60,7 +63,9 @@ public class Tuple implements Serializable {
      * @param f new value for the field.
      */
     public void setField(int i, Field f) {
-        // TODO: some code goes here
+        if (i < fields.length) {
+            fields[i] = f;
+        }
     }
 
     /**
@@ -68,8 +73,11 @@ public class Tuple implements Serializable {
      * @return the value of the ith field, or null if it has not been set.
      */
     public Field getField(int i) {
-        // TODO: some code goes here
-        return null;
+        if (i < fields.length) {
+            return fields[i];
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -81,22 +89,24 @@ public class Tuple implements Serializable {
      * where \t is any whitespace (except a newline)
      */
     public String toString() {
-        // TODO: some code goes here
-        throw new UnsupportedOperationException("Implement this");
+        List<String> allColumns = new ArrayList<>();
+        for (Field field : fields) {
+            allColumns.add(field.getType().name());
+        }
+        return String.join("/n", allColumns);
     }
 
     /**
      * @return An iterator which iterates over all the fields of this tuple
      */
     public Iterator<Field> fields() {
-        // TODO: some code goes here
-        return null;
+        return Arrays.asList(fields).iterator();
     }
 
     /**
      * reset the TupleDesc of this tuple (only affecting the TupleDesc)
      */
     public void resetTupleDesc(TupleDesc td) {
-        // TODO: some code goes here
+        this.tupleDesc = td;
     }
 }

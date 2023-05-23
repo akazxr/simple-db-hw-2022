@@ -21,6 +21,8 @@ public class TupleTest extends SimpleDbTestBase {
         tup.setField(0, new IntField(-1));
         tup.setField(1, new IntField(0));
 
+        System.out.println(tup.toString());
+
         assertEquals(new IntField(-1), tup.getField(0));
         assertEquals(new IntField(0), tup.getField(1));
 
