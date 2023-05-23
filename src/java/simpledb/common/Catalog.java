@@ -22,26 +22,46 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Catalog {
 
+    private final ConcurrentHashMap<Integer, Table> tables;
+
+    TupleDesc td;
+
+    private static class Table {
+
+        DbFile file;
+
+        String name;
+
+        String pkField;
+
+        Table(DbFile file, String name, String pkField) {
+            this.file = file;
+            this.name = name;
+            this.pkField = pkField;
+        }
+
+    }
+
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
     public Catalog() {
-        // TODO: some code goes here
+        tables = new ConcurrentHashMap<>();
     }
 
     /**
      * Add a new table to the catalog.
      * This table's contents are stored in the specified DbFile.
      *
-     * @param file      the contents of the table to add;  file.getId() is the identfier of
-     *                  this file/tupledesc param for the calls getTupleDesc and getFile
-     * @param name      the name of the table -- may be an empty string.  May not be null.  If a name
-     *                  conflict exists, use the last table to be added as the table for a given name.
+     * @param file the contents of the table to add;  file.getId() is the identfier of
+     * this file/tupledesc param for the calls getTupleDesc and getFile
+     * @param name the name of the table -- may be an empty string.  May not be null.  If a name
+     * conflict exists, use the last table to be added as the table for a given name.
      * @param pkeyField the name of the primary key field
      */
     public void addTable(DbFile file, String name, String pkeyField) {
-        // TODO: some code goes here
+        tables.put(file.getId(), new Table(file, name, pkeyField));
     }
 
     public void addTable(DbFile file, String name) {
@@ -54,7 +74,7 @@ public class Catalog {
      * contents are stored in the specified DbFile.
      *
      * @param file the contents of the table to add;  file.getId() is the identfier of
-     *             this file/tupledesc param for the calls getTupleDesc and getFile
+     * this file/tupledesc param for the calls getTupleDesc and getFile
      */
     public void addTable(DbFile file) {
         addTable(file, (UUID.randomUUID()).toString());
@@ -66,20 +86,23 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) throws NoSuchElementException {
-        // TODO: some code goes here
-        return 0;
+        return tables.searchValues(1, value -> {
+            if (value.name.equals(name)) {
+                return value.file.getId();
+            }
+            throw new NoSuchElementException("the table with name " + name + " doesn't exist");
+        });
     }
 
     /**
      * Returns the tuple descriptor (schema) of the specified table
      *
      * @param tableid The id of the table, as specified by the DbFile.getId()
-     *                function passed to addTable
+     * function passed to addTable
      * @throws NoSuchElementException if the table doesn't exist
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        // TODO: some code goes here
-        return null;
+        return
     }
 
     /**
@@ -87,7 +110,7 @@ public class Catalog {
      * specified table.
      *
      * @param tableid The id of the table, as specified by the DbFile.getId()
-     *                function passed to addTable
+     * function passed to addTable
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
         // TODO: some code goes here
@@ -139,18 +162,18 @@ public class Catalog {
                 for (String e : els) {
                     String[] els2 = e.trim().split(" ");
                     names.add(els2[0].trim());
-                    if (els2[1].trim().equalsIgnoreCase("int"))
+                    if (els2[1].trim().equalsIgnoreCase("int")) {
                         types.add(Type.INT_TYPE);
-                    else if (els2[1].trim().equalsIgnoreCase("string"))
+                    } else if (els2[1].trim().equalsIgnoreCase("string")) {
                         types.add(Type.STRING_TYPE);
-                    else {
+                    } else {
                         System.out.println("Unknown type " + els2[1]);
                         System.exit(0);
                     }
                     if (els2.length == 3) {
-                        if (els2[2].trim().equals("pk"))
+                        if (els2[2].trim().equals("pk")) {
                             primaryKey = els2[0].trim();
-                        else {
+                        } else {
                             System.out.println("Unknown annotation " + els2[2]);
                             System.exit(0);
                         }
