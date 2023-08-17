@@ -94,12 +94,23 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) throws NoSuchElementException {
-        return tables.searchValues(1, value -> {
+        // return tables.searchValues(1, value -> {
+        //     if (value.name.equals(name)) {
+        //         return value.file.getId();
+        //     }
+        //     throw new NoSuchElementException("the table with name " + name + " doesn't exist");
+        // });
+        Integer res = tables.searchValues(1, value -> {
             if (value.name.equals(name)) {
                 return value.file.getId();
             }
-            throw new NoSuchElementException("the table with name " + name + " doesn't exist");
+            return null;
         });
+        if (res != null) {
+            return res;
+        } else {
+            throw new NoSuchElementException("not found id for table " + name);
+        }
     }
 
     /**
