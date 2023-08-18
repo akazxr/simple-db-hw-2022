@@ -303,11 +303,9 @@ public class HeapPage implements Page {
     public boolean isSlotUsed(int i) {
         // 获取对应槽位
         // 每个header有1个byte，每个byte中8个bit，每个bit代表了一个槽位是否被tuple使用
-        int q = i/8;
-        int reminder = i%8;
-        int idx = header[q];
-        // 入参是int i，实际上看的是第i+1个
-        return ((idx>>reminder)&1) == 1;
+        int index = i/8;
+        int remainder = i%8;
+        return ((header[index] >> remainder) & 1) == 1;
     }
 
     /**
@@ -323,13 +321,13 @@ public class HeapPage implements Page {
      *         (note that this iterator shouldn't return tuples in empty slots!)
      */
     public Iterator<Tuple> iterator() {
-        ArrayList<Tuple> res = new ArrayList<>();
-        for (int i = 0; i < numSlots; i++) {
-            if(isSlotUsed(i)){
-                res.add(tuples[i]);
+        ArrayList<Tuple> tupleList = new ArrayList<>();
+        for (int i = 0; i < tuples.length; i++) {
+            if (isSlotUsed(i)) {
+                tupleList.add(tuples[i]);
             }
         }
-        return res.iterator();
+        return tupleList.iterator();
     }
 
 }
