@@ -573,8 +573,8 @@ access method, and we have written some of the code for you.
 
 A `HeapFile` object is arranged into a set of pages, each of which consists of a
 fixed number of bytes for storing tuples, (defined by the constant
-`BufferPool.DEFAULT_PAGE_SIZE`), including a header. In SimpleDB, there is one
-`HeapFile` object for each table in the database. Each page in a `HeapFile` is
+`BufferPool.DEFAULT_PAGE_SIZE`), including a header. **In SimpleDB, there is one
+`HeapFile` object for each table in the database.** Each page in a `HeapFile` is
 arranged as a set of slots, each of which can hold one tuple (tuples for a given
 table in SimpleDB are all of the same size). In addition to these slots, each
 page has a header that consists of a bitmap with one bit per tuple slot. If the
