@@ -35,7 +35,7 @@ public class HeapFile implements DbFile {
      * Constructs a heap file backed by the specified file.
      *
      * @param f the file that stores the on-disk backing store for this heap
-     *          file.
+     * file.
      */
     public HeapFile(File f, TupleDesc td) {
         this.file = f;
@@ -82,22 +82,24 @@ public class HeapFile implements DbFile {
             f = new RandomAccessFile(this.file, "r");
             if ((long) (pageNumber + 1) * BufferPool.getPageSize() > f.length()) {
                 f.close();
-                throw new IllegalArgumentException(String.format("表 %d 页 %d 不存在", tableId, pageNumber));
+                throw new IllegalArgumentException(
+                    String.format("table %d page %d does not exist", tableId, pageNumber));
             }
             byte[] bytes = new byte[BufferPool.getPageSize()];
-            f.seek((long) pageNumber *BufferPool.getPageSize());
+            f.seek((long) pageNumber * BufferPool.getPageSize());
             int read = f.read(bytes, 0, BufferPool.getPageSize());
             // 读出来length对不上 说明page不存在
             if (read != BufferPool.getPageSize()) {
-                throw new IllegalArgumentException(String.format("表 %d 页 %d 不存在", tableId, pageNumber));
+                throw new IllegalArgumentException(
+                    String.format("table %d page %d does not exist", tableId, pageNumber));
             }
             return new HeapPage(new HeapPageId(tableId, pageNumber), bytes);
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            try{
+            try {
                 f.close();
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -119,15 +121,14 @@ public class HeapFile implements DbFile {
 
     // see DbFile.java for javadocs
     public List<Page> insertTuple(TransactionId tid, Tuple t)
-            throws DbException, IOException, TransactionAbortedException {
+        throws DbException, IOException, TransactionAbortedException {
         // TODO: some code goes here
         return null;
         // not necessary for lab1
     }
 
     // see DbFile.java for javadocs
-    public List<Page> deleteTuple(TransactionId tid, Tuple t) throws DbException,
-            TransactionAbortedException {
+    public List<Page> deleteTuple(TransactionId tid, Tuple t) throws DbException, TransactionAbortedException {
         // TODO: some code goes here
         return null;
         // not necessary for lab1
@@ -142,8 +143,11 @@ public class HeapFile implements DbFile {
     private static final class HeapFileIterator implements DbFileIterator {
 
         private final HeapFile heapFile;
+
         private final TransactionId tid;
+
         private int pagePosition;
+
         private Iterator<Tuple> tupleIterator;
 
         public HeapFileIterator(HeapFile heapFile, TransactionId tid) {
@@ -151,10 +155,9 @@ public class HeapFile implements DbFile {
             this.tid = tid;
         }
 
-
         @Override
         public void open() throws DbException, TransactionAbortedException {
-            HeapPage heapPage = Database.getBufferPool().getPage(TransactionId, , Permissions.READ_ONLY);
+            //  HeapPage heapPage = Database.getBufferPool().getPage(TransactionId, , Permissions.READ_ONLY);
         }
 
         @Override
