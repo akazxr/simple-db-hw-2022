@@ -140,7 +140,7 @@ public class HeapFile implements DbFile {
         return new HeapFileIterator(this, tid);
     }
 
-    private static final class HeapFileIterator implements DbFileIterator {
+    public static final class HeapFileIterator implements DbFileIterator {
 
         private final HeapFile heapFile;
 
