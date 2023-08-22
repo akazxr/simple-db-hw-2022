@@ -81,7 +81,7 @@ public class StringAggregator implements Aggregator {
         Type[] typeAr;
         String[] fieldAr;
         TupleDesc tupleDesc;
-        if (gbfieldIndex != NO_GROUPING) {
+        if (gbfieldIndex == NO_GROUPING) {
             typeAr = new Type[] {Type.INT_TYPE};
             fieldAr = new String[] {"aggregateVal"};
             tupleDesc = new TupleDesc(typeAr, fieldAr);
@@ -92,8 +92,8 @@ public class StringAggregator implements Aggregator {
             typeAr = new Type[] {gbfieldType, Type.INT_TYPE};
             fieldAr = new String[] {"groupVal", "aggregateVal"};
             tupleDesc = new TupleDesc(typeAr, fieldAr);
-            Tuple tup = new Tuple(tupleDesc);
             for (Field f : result.keySet()) {
+                Tuple tup = new Tuple(tupleDesc);
                 if (gbfieldType.equals(Type.INT_TYPE)) {
                     IntField gbField = (IntField)f;
                     tup.setField(0, gbField);
