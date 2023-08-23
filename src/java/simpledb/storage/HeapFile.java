@@ -10,6 +10,7 @@ import simpledb.transaction.TransactionId;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -111,6 +112,19 @@ public class HeapFile implements DbFile {
     public void writePage(Page page) throws IOException {
         // TODO: some code goes here
         // not necessary for lab1
+        int pgNo = page.getId().getPageNumber();
+        if (pgNo > numPages()) {
+            throw new IllegalArgumentException();
+        }
+        int pgSize = BufferPool.getPageSize();
+        //write IO
+        RandomAccessFile f = new RandomAccessFile(file, "rw");
+        // set offset
+        f.seek(pgNo * pgSize);
+        // write
+        byte[] data = page.getPageData();
+        f.write(data);
+        f.close();
     }
 
     /**
@@ -124,15 +138,40 @@ public class HeapFile implements DbFile {
     public List<Page> insertTuple(TransactionId tid, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
         // TODO: some code goes here
-        return null;
         // not necessary for lab1
+        ArrayList<Page> pageList = new ArrayList<>();
+        for (int i = 0; i < numPages(); i++) {
+            HeapPageId pid = new HeapPageId(this.getId(), i);
+            HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
+            if (page.getNumUnusedSlots() == 0) {
+                continue;
+            }
+            page.insertTuple(t);
+            pageList.add(page);
+            return pageList;
+        }
+        // if all pages are full, create a new page
+        BufferedOutputStream bw = new BufferedOutputStream(new FileOutputStream(file, true));
+        byte[] emptyData = HeapPage.createEmptyPageData();
+        bw.write(emptyData);
+        bw.close();
+        HeapPageId pid = new HeapPageId(this.getId(), numPages() - 1);
+        HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
+        page.insertTuple(t);
+        pageList.add(page);
+        return pageList;
     }
 
     // see DbFile.java for javadocs
     public List<Page> deleteTuple(TransactionId tid, Tuple t) throws DbException, TransactionAbortedException {
         // TODO: some code goes here
-        return null;
         // not necessary for lab1
+        ArrayList<Page> pageList = new ArrayList<>();
+        PageId pid = t.getRecordId().getPageId();
+        HeapPage page = (HeapPage)Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
+        page.deleteTuple(t);
+        pageList.add(page);
+        return pageList;
     }
 
     // see DbFile.java for javadocs
@@ -172,10 +211,15 @@ public class HeapFile implements DbFile {
 
         @Override
         public boolean hasNext() throws DbException, TransactionAbortedException {
-            if (tupleIterator == null || pagePos >= heapFile.numPages()) {
+            if (tupleIterator == null) {
                 return false;
             }
-            if (!tupleIterator.hasNext() && pagePos == heapFile.numPages() - 1) {
+            if (!tupleIterator.hasNext()) {
+                if (pagePos < (heapFile.numPages() - 1)) {
+                    pagePos++;
+                    tupleIterator = getTupleIterator(pagePos);
+                    return tupleIterator.hasNext();
+                }
                 return false;
             }
             return true;
@@ -183,13 +227,8 @@ public class HeapFile implements DbFile {
 
         @Override
         public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
-            if (tupleIterator == null) {
+            if (tupleIterator == null || !tupleIterator.hasNext()) {
                 throw new NoSuchElementException("file not open");
-            }
-            if (!tupleIterator.hasNext()) {
-                pagePos++;
-                HeapPage nextPage = (HeapPage) Database.getBufferPool().getPage(tid, new HeapPageId(heapFile.getId(), pagePos), Permissions.READ_ONLY);
-                tupleIterator = nextPage.iterator();
             }
             return tupleIterator.next();
         }

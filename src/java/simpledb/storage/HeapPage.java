@@ -29,6 +29,8 @@ public class HeapPage implements Page {
     byte[] oldData;
     private final Byte oldDataLock = (byte) 0;
 
+    private TransactionId tid;
+
     /**
      * Create a HeapPage from a set of bytes of data read from disk.
      * The format of a HeapPage is a set of header bytes indicating
@@ -76,7 +78,7 @@ public class HeapPage implements Page {
      * @return the number of tuples on this page
      */
     private int getNumTuples() {
-        return (int) Math.floor(BufferPool.getPageSize()*8.0/(td.getSize()*8 + 1));
+        return (int) Math.floor(BufferPool.getPageSize() * 8.0 / (td.getSize() * 8 + 1));
     }
 
     /**
@@ -85,7 +87,7 @@ public class HeapPage implements Page {
      * @return the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      */
     private int getHeaderSize() {
-        return (int)Math.ceil(getNumTuples()*1.0/8);
+        return (int) Math.ceil(getNumTuples() * 1.0 / 8);
     }
 
     /**
@@ -251,6 +253,16 @@ public class HeapPage implements Page {
     public void deleteTuple(Tuple t) throws DbException {
         // TODO: some code goes here
         // not necessary for lab1
+        if (!t.getTupleDesc().equals(td)) {
+            throw new DbException("tuple is not on this page");
+        }
+        RecordId recordId = t.getRecordId();
+        if (tuples[recordId.getTupleNumber()] == null || !tuples[recordId.getTupleNumber()].equals(t) || !isSlotUsed(
+            recordId.getTupleNumber())) {
+            throw new DbException("tuple is not on this page");
+        }
+        markSlotUsed(recordId.getTupleNumber(), false);
+        tuples[recordId.getTupleNumber()] = null;
     }
 
     /**
@@ -264,6 +276,22 @@ public class HeapPage implements Page {
     public void insertTuple(Tuple t) throws DbException {
         // TODO: some code goes here
         // not necessary for lab1
+        if (getNumUnusedSlots() == 0) {
+            throw new DbException("tuple Desc does not match");
+        }
+        if (!t.getTupleDesc().equals(td)) {
+            throw new DbException("tuple Desc does not match");
+        }
+
+        for (int i = 0; i < numSlots; i++) {
+            if (isSlotUsed(i)) {
+                continue;
+            }
+            markSlotUsed(i, true);
+            t.setRecordId(new RecordId(pid, i));
+            tuples[i] = t;
+            break;
+        }
     }
 
     /**
@@ -273,6 +301,12 @@ public class HeapPage implements Page {
     public void markDirty(boolean dirty, TransactionId tid) {
         // TODO: some code goes here
         // not necessary for lab1
+        if (dirty) {
+            this.tid = tid;
+        } else {
+            this.tid = null;
+        }
+
     }
 
     /**
@@ -281,7 +315,7 @@ public class HeapPage implements Page {
     public TransactionId isDirty() {
         // TODO: some code goes here
         // Not necessary for lab1
-        return null;      
+        return tid;
     }
 
     /**
@@ -289,7 +323,7 @@ public class HeapPage implements Page {
      */
     public int getNumUnusedSlots() {
         int an = 0;
-        for(int i = 0; i < numSlots; i++) {
+        for (int i = 0; i < numSlots; i++) {
             if (!isSlotUsed(i)) {
                 an = an + 1;
             }
@@ -303,8 +337,8 @@ public class HeapPage implements Page {
     public boolean isSlotUsed(int i) {
         // 获取对应槽位
         // 每个header有1个byte，每个byte中8个bit，每个bit代表了一个槽位是否被tuple使用
-        int index = i/8;
-        int remainder = i%8;
+        int index = i / 8;
+        int remainder = i % 8;
         return ((header[index] >> remainder) & 1) == 1;
     }
 
@@ -314,11 +348,20 @@ public class HeapPage implements Page {
     private void markSlotUsed(int i, boolean value) {
         // TODO: some code goes here
         // not necessary for lab1
+        int index = i / 8;
+        int remainder = i % 8;
+        if (value) {
+            // if true, mark slot used: mark header bit as 1
+            header[index] = (byte) ((header[index]) | (1 << remainder));
+        } else {
+            // if false, mark slot unused: mark header bit as 0
+            header[index] = (byte) ((header[index]) & (~(1 << remainder)));
+        }
     }
 
     /**
      * @return an iterator over all tuples on this page (calling remove on this iterator throws an UnsupportedOperationException)
-     *         (note that this iterator shouldn't return tuples in empty slots!)
+     * (note that this iterator shouldn't return tuples in empty slots!)
      */
     public Iterator<Tuple> iterator() {
         ArrayList<Tuple> tupleList = new ArrayList<>();
