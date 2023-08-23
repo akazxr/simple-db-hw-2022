@@ -31,7 +31,7 @@ public class BufferPool {
 
     private static int pageSize = DEFAULT_PAGE_SIZE;
 
-    private Map<Integer, Page> bufferPool;
+    private LRU lru;
 
     private int numPages;
 
@@ -48,8 +48,8 @@ public class BufferPool {
      * @param numPages maximum number of pages in this buffer pool.
      */
     public BufferPool(int numPages) {
-        this.bufferPool = new ConcurrentHashMap<>();
         this.numPages = numPages;
+        lru = new LRU(numPages);
     }
 
     public static int getPageSize() {
@@ -83,12 +83,8 @@ public class BufferPool {
      */
     public Page getPage(TransactionId tid, PageId pid, Permissions perm)
             throws TransactionAbortedException, DbException {
-        if (!bufferPool.containsKey(pid.hashCode())) {
-            DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
-            Page page = dbFile.readPage(pid);
-            bufferPool.put(pid.hashCode(), page);
-        }
-        return bufferPool.get(pid.hashCode());
+        lru.put(pid);
+        return lru.get(pid).page;
     }
 
     /**
@@ -184,6 +180,13 @@ public class BufferPool {
     public synchronized void flushAllPages() throws IOException {
         // TODO: some code goes here
         // not necessary for lab1
+        lru.map.forEach((pid, page) -> {
+            try {
+                flushPage(pid);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
 
     }
 
@@ -209,6 +212,10 @@ public class BufferPool {
     private synchronized void flushPage(PageId pid) throws IOException {
         // TODO: some code goes here
         // not necessary for lab1
+        Page page = lru.map.get(pid).page;
+        int table = pid.getTableId();
+        DbFile file = Database.getCatalog().getDatabaseFile(table);
+        file.writePage(page);
     }
 
     /**
@@ -226,6 +233,12 @@ public class BufferPool {
     private synchronized void evictPage() throws DbException {
         // TODO: some code goes here
         // not necessary for lab1
+        PageId pageId = lru.removeLast();
+        try {
+            flushPage(pageId);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }
