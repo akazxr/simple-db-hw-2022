@@ -9,11 +9,15 @@ import java.util.concurrent.ConcurrentHashMap;
 public class LRU {
     static class Node {
         PageId pid;
+
         Node next;
+
         Node prev;
 
         Page page;
-        public Node(){}
+
+        public Node() {
+        }
 
         public Node(PageId pid, Page page) {
             this.pid = pid;
@@ -23,7 +27,9 @@ public class LRU {
 
     class NodeList {
         int size;
+
         Node head;
+
         Node tail;
 
         public NodeList() {
@@ -80,12 +86,12 @@ public class LRU {
     }
 
     public void put(PageId pid) {
+        DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
+        Page page = map.containsKey(pid) ? map.get(pid).page : dbFile.readPage(pid);
         if (map.containsKey(pid)) {
             nodeList.remove(map.get(pid));
             map.remove(pid);
         }
-        DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
-        Page page = dbFile.readPage(pid);
         Node newNode = new Node(pid, page);
         nodeList.addFirst(newNode);
         map.put(pid, newNode);

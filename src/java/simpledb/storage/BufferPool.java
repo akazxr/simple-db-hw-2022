@@ -177,7 +177,7 @@ public class BufferPool {
         // TODO: some code goes here
         // not necessary for lab1
         HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId());
-        List<Page> pages = file.insertTuple(tid, t);
+        List<Page> pages = file.deleteTuple(tid, t);
         for (int i = 0; i < pages.size(); i++) {
             pages.get(i).markDirty(true, tid);
             lru.map.put(pages.get(i).getId(), new LRU.Node(pages.get(i).getId(), pages.get(i)));
