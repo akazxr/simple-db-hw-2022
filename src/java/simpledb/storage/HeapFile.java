@@ -214,15 +214,18 @@ public class HeapFile implements DbFile {
             if (tupleIterator == null) {
                 return false;
             }
-            if (!tupleIterator.hasNext()) {
+            while (tupleIterator != null && !tupleIterator.hasNext()) {
                 if (pagePos < (heapFile.numPages() - 1)) {
                     pagePos++;
                     tupleIterator = getTupleIterator(pagePos);
-                    return tupleIterator.hasNext();
+                } else {
+                    tupleIterator = null;
                 }
+            }
+            if (tupleIterator == null) {
                 return false;
             }
-            return true;
+            return tupleIterator.hasNext();
         }
 
         @Override
@@ -244,6 +247,5 @@ public class HeapFile implements DbFile {
             tupleIterator = null;
         }
     }
-
 }
 

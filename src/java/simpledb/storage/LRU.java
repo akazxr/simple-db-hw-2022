@@ -7,7 +7,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class LRU {
-    class Node {
+    static class Node {
         PageId pid;
         Node next;
         Node prev;
@@ -17,6 +17,7 @@ public class LRU {
 
         public Node(PageId pid, Page page) {
             this.pid = pid;
+            this.page = page;
         }
     }
 
@@ -86,6 +87,18 @@ public class LRU {
         DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
         Page page = dbFile.readPage(pid);
         Node newNode = new Node(pid, page);
+        nodeList.addFirst(newNode);
+        map.put(pid, newNode);
+        if (nodeList.size > capacity) {
+            removeLast();
+        }
+    }
+
+    public void put(PageId pid, Node newNode) {
+        if (map.containsKey(pid)) {
+            nodeList.remove(map.get(pid));
+            map.remove(pid);
+        }
         nodeList.addFirst(newNode);
         map.put(pid, newNode);
         if (nodeList.size > capacity) {

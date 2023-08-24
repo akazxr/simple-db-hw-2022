@@ -155,7 +155,7 @@ public class BufferPool {
         List<Page> pages = file.insertTuple(tid, t);
         for (int i = 0; i < pages.size(); i++) {
             pages.get(i).markDirty(true, tid);
-            bufferPool.put(pages.get(i).getId().hashCode(), pages.get(i));
+            lru.put(pages.get(i).getId(), new LRU.Node(pages.get(i).getId(), pages.get(i)));
         }
     }
 
@@ -180,7 +180,7 @@ public class BufferPool {
         List<Page> pages = file.insertTuple(tid, t);
         for (int i = 0; i < pages.size(); i++) {
             pages.get(i).markDirty(true, tid);
-            bufferPool.put(pages.get(i).getId().hashCode(), pages.get(i));
+            lru.map.put(pages.get(i).getId(), new LRU.Node(pages.get(i).getId(), pages.get(i)));
         }
     }
 
