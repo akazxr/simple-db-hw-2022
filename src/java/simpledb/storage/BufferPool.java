@@ -180,7 +180,7 @@ public class BufferPool {
         List<Page> pages = file.deleteTuple(tid, t);
         for (int i = 0; i < pages.size(); i++) {
             pages.get(i).markDirty(true, tid);
-            lru.map.put(pages.get(i).getId(), new LRU.Node(pages.get(i).getId(), pages.get(i)));
+            lru.put(pages.get(i).getId(), new LRU.Node(pages.get(i).getId(), pages.get(i)));
         }
     }
 

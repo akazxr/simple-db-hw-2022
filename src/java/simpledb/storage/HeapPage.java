@@ -257,8 +257,8 @@ public class HeapPage implements Page {
             throw new DbException("tuple is not on this page");
         }
         RecordId recordId = t.getRecordId();
-        if (tuples[recordId.getTupleNumber()] == null || !tuples[recordId.getTupleNumber()].equals(t) || !isSlotUsed(
-            recordId.getTupleNumber())) {
+        if (tuples[recordId.getTupleNumber()] == null || !tuples[recordId.getTupleNumber()].getRecordId()
+            .equals(recordId) || !isSlotUsed(recordId.getTupleNumber())) {
             throw new DbException("tuple is not on this page");
         }
         markSlotUsed(recordId.getTupleNumber(), false);
