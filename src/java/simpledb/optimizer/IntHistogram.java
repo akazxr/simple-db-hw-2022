@@ -7,6 +7,16 @@ import simpledb.execution.Predicate;
  */
 public class IntHistogram {
 
+    int[] buckets;
+
+    int min;
+
+    int max;
+
+    double width;
+
+    int ntups;
+
     /**
      * Create a new IntHistogram.
      * <p>
@@ -25,6 +35,11 @@ public class IntHistogram {
      */
     public IntHistogram(int buckets, int min, int max) {
         // TODO: some code goes here
+        this.buckets = new int[buckets];
+        this.min = min;
+        this.max = max;
+        this.width = 1.0 * (max - min) / buckets;
+        ntups = 0;
     }
 
     /**
@@ -34,6 +49,12 @@ public class IntHistogram {
      */
     public void addValue(int v) {
         // TODO: some code goes here
+        if (v > max || v < min) {
+            throw new IllegalArgumentException("v is not int the bucket");
+        }
+        if (v == max) buckets[buckets.length - 1]++;
+        else buckets[(int)((v - min)/width)]++;
+        ntups++;
     }
 
     /**
