@@ -1,12 +1,16 @@
 package simpledb.optimizer;
 
 import simpledb.common.Database;
+import simpledb.common.DbException;
 import simpledb.common.Type;
 import simpledb.execution.Predicate;
 import simpledb.execution.SeqScan;
 import simpledb.storage.*;
 import simpledb.transaction.Transaction;
+import simpledb.transaction.TransactionAbortedException;
+import simpledb.transaction.TransactionId;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -69,6 +73,10 @@ public class TableStats {
 
     private int ioCostPerPage;
 
+    private Map<Integer, IntHistogram> intHistogramMap;
+
+    private Map<Integer, IntHistogram> stringHistogramMap;
+
     /**
      * Create a new TableStats object, that keeps track of statistics on each
      * column of a table
@@ -89,8 +97,28 @@ public class TableStats {
         this.tableid = tableid;
         this.ioCostPerPage = ioCostPerPage;
         HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(tableid);
+        intHistogramMap = new ConcurrentHashMap<>();
+        stringHistogramMap = new ConcurrentHashMap<>();
 
+        init();
+    }
 
+    private void init() {
+        try {
+            Map<Integer, Integer> minMap = new HashMap<>();
+            Map<Integer, Integer> maxMap = new HashMap<>();
+            TransactionId tid = new TransactionId();
+            SeqScan seqScan = new SeqScan(tid, tableid);
+            seqScan.open();
+            if (seqScan.hasNext()) {
+                Tuple t = seqScan.next();
+
+            }
+        } catch (DbException e) {
+            e.printStackTrace();
+        } catch (TransactionAbortedException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
