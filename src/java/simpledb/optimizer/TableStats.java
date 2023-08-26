@@ -40,7 +40,6 @@ public class TableStats {
         } catch (NoSuchFieldException | IllegalAccessException | IllegalArgumentException | SecurityException e) {
             e.printStackTrace();
         }
-
     }
 
     public static Map<String, TableStats> getStatsMap() {
@@ -66,6 +65,10 @@ public class TableStats {
      */
     static final int NUM_HIST_BINS = 100;
 
+    private int tableid;
+
+    private int ioCostPerPage;
+
     /**
      * Create a new TableStats object, that keeps track of statistics on each
      * column of a table
@@ -83,6 +86,11 @@ public class TableStats {
         // necessarily have to (for example) do everything
         // in a single scan of the table.
         // TODO: some code goes here
+        this.tableid = tableid;
+        this.ioCostPerPage = ioCostPerPage;
+        HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(tableid);
+
+
     }
 
     /**

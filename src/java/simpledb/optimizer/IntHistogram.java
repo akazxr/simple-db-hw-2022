@@ -75,18 +75,32 @@ public class IntHistogram {
      */
     public double estimateSelectivity(Predicate.Op op, int v) {
         // TODO: some code goes here
-        int index = findIndex(v);
         if (op.equals(Op.GREATER_THAN)) {
-            double b_part = ((index + 1.0) * width - v) / width;
+            if (v >= max) {
+                return 0.0;
+            }
+            if (v <= min) {
+                return 1.0;
+            }
+            int index = findIndex(v);
+            double selectivity = 0.0;
+            for (int i = index + 1; i < buckets.length; i++) {
+                selectivity += 1.0 * buckets[i] / ntups;
+            }
+            double b_part = ((index + 1.0) * width + min - v) / width;
             double b_f = 1.0 * buckets[index] / ntups;
-            return b_part * b_f;
+            return b_part * b_f + selectivity;
         } else if (op.equals(Op.GREATER_THAN_OR_EQ)) {
-            return estimateSelectivity(Op.GREATER_THAN, v - 1);
+            return estimateSelectivity(Op.GREATER_THAN, v) + estimateSelectivity(Op.EQUALS, v);
         } else if (op.equals(Op.LESS_THAN)) {
-            return 1 - estimateSelectivity(Op.GREATER_THAN, v - 1);
+            return 1 - estimateSelectivity(Op.GREATER_THAN, v);
         } else if (op.equals(Op.LESS_THAN_OR_EQ)) {
-           return 1 - estimateSelectivity(Op.GREATER_THAN, v);
+            return estimateSelectivity(Op.LESS_THAN, v) + estimateSelectivity(Op.EQUALS, v);
         } else if (op.equals(Op.EQUALS)) {
+            if (v >= max || v <= min) {
+                return 0.0;
+            }
+            int index = findIndex(v);
             return 1.0 * buckets[index] / width / ntups;
         } else if (op.equals(Op.NOT_EQUALS)) {
             return 1 - estimateSelectivity(Op.EQUALS, v);
