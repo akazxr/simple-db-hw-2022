@@ -1,6 +1,7 @@
 package simpledb.optimizer;
 
 import simpledb.execution.Predicate;
+import simpledb.execution.Predicate.Op;
 
 /**
  * A class to represent a fixed-width histogram over a single integer-based field.
@@ -49,12 +50,17 @@ public class IntHistogram {
      */
     public void addValue(int v) {
         // TODO: some code goes here
+        int index = findIndex(v);
+        buckets[index]++;
+        ntups++;
+    }
+
+    private int findIndex(int v) {
         if (v > max || v < min) {
             throw new IllegalArgumentException("v is not int the bucket");
         }
-        if (v == max) buckets[buckets.length - 1]++;
-        else buckets[(int)((v - min)/width)]++;
-        ntups++;
+        if (v == max) return buckets.length - 1;
+        else return (int)((v - min)/width);
     }
 
     /**
@@ -68,9 +74,24 @@ public class IntHistogram {
      * @return Predicted selectivity of this particular operator and value
      */
     public double estimateSelectivity(Predicate.Op op, int v) {
-
         // TODO: some code goes here
-        return -1.0;
+        int index = findIndex(v);
+        if (op.equals(Op.GREATER_THAN)) {
+            double b_part = ((index + 1.0) * width - v) / width;
+            double b_f = 1.0 * buckets[index] / ntups;
+            return b_part * b_f;
+        } else if (op.equals(Op.GREATER_THAN_OR_EQ)) {
+            return estimateSelectivity(Op.GREATER_THAN, v - 1);
+        } else if (op.equals(Op.LESS_THAN)) {
+            return 1 - estimateSelectivity(Op.GREATER_THAN, v - 1);
+        } else if (op.equals(Op.LESS_THAN_OR_EQ)) {
+           return 1 - estimateSelectivity(Op.GREATER_THAN, v);
+        } else if (op.equals(Op.EQUALS)) {
+            return 1.0 * buckets[index] / width / ntups;
+        } else if (op.equals(Op.NOT_EQUALS)) {
+            return 1 - estimateSelectivity(Op.EQUALS, v);
+        }
+        return 0.0;
     }
 
     /**
@@ -90,6 +111,7 @@ public class IntHistogram {
      */
     public String toString() {
         // TODO: some code goes here
+        String toString = "width is: " + width + " bucket num is: " + buckets.length;
         return null;
     }
 }
