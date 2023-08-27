@@ -203,11 +203,6 @@ public class TableStats {
      */
     public double avgSelectivity(int field, Predicate.Op op) {
         // TODO: some code goes here
-//        if (tupDesc.getFieldType(field).equals(Type.INT_TYPE)) {
-//            return intHistogramMap.get(field).avgSelectivity();
-//        } else {
-//            return stringHistogramMap.get(field).avgSelectivity();
-//        }
         return 1.0;
     }
 
