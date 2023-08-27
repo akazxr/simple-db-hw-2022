@@ -75,7 +75,13 @@ public class TableStats {
 
     private Map<Integer, IntHistogram> intHistogramMap;
 
-    private Map<Integer, IntHistogram> stringHistogramMap;
+    private Map<Integer, StringHistogram> stringHistogramMap;
+
+    private int ntups;
+
+    private HeapFile file;
+
+    private TupleDesc tupDesc;
 
     /**
      * Create a new TableStats object, that keeps track of statistics on each
@@ -96,28 +102,63 @@ public class TableStats {
         // TODO: some code goes here
         this.tableid = tableid;
         this.ioCostPerPage = ioCostPerPage;
-        HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(tableid);
+        file = (HeapFile) Database.getCatalog().getDatabaseFile(tableid);
+        tupDesc = file.getTupleDesc();
         intHistogramMap = new ConcurrentHashMap<>();
         stringHistogramMap = new ConcurrentHashMap<>();
-
+        ntups = 0;
         init();
     }
 
     private void init() {
+        TransactionId tid = new TransactionId();
+        SeqScan seqScan = new SeqScan(tid, tableid);
         try {
             Map<Integer, Integer> minMap = new HashMap<>();
             Map<Integer, Integer> maxMap = new HashMap<>();
-            TransactionId tid = new TransactionId();
-            SeqScan seqScan = new SeqScan(tid, tableid);
             seqScan.open();
-            if (seqScan.hasNext()) {
+            while (seqScan.hasNext()) {
+                ntups++;
                 Tuple t = seqScan.next();
-
+                for (int i = 0; i < tupDesc.numFields(); i++) {
+                    if (tupDesc.getFieldType(i).equals(Type.INT_TYPE)) {
+                        IntField field = (IntField) t.getField(i);
+                        int min = minMap.getOrDefault(i, Integer.MAX_VALUE);
+                        minMap.put(i, Math.min(min, field.getValue()));
+                        int max = maxMap.getOrDefault(i, Integer.MIN_VALUE);
+                        maxMap.put(i, Math.max(max, field.getValue()));
+                    } else {
+                        StringField field = (StringField) t.getField(i);
+                        StringHistogram histogram = stringHistogramMap.getOrDefault(i, new StringHistogram(NUM_HIST_BINS));
+                        histogram.addValue(field.getValue());
+                        stringHistogramMap.put(i, histogram);
+                    }
+                }
             }
-        } catch (DbException e) {
+            for (int i = 0; i < tupDesc.numFields(); i++) {
+                if (minMap.get(i) != null) {
+                    intHistogramMap.put(i, new IntHistogram(NUM_HIST_BINS, minMap.get(i), maxMap.get(i)));
+                }
+            }
+            seqScan.rewind();
+            while (seqScan.hasNext()) {
+                Tuple t = seqScan.next();
+                for (int i = 0; i < tupDesc.numFields(); i++) {
+                    if (tupDesc.getFieldType(i).equals(Type.INT_TYPE)) {
+                        IntHistogram histogram = intHistogramMap.get(i);
+                        if (histogram == null) {
+                            throw new IllegalArgumentException();
+                        }
+                        IntField field = (IntField) t.getField(i);
+                        histogram.addValue(field.getValue());
+                        intHistogramMap.put(i, histogram);
+                    }
+                }
+            }
+        } catch (DbException | TransactionAbortedException e) {
             e.printStackTrace();
-        } catch (TransactionAbortedException e) {
-            e.printStackTrace();
+        } finally {
+            seqScan.close();
         }
     }
 
@@ -135,7 +176,7 @@ public class TableStats {
      */
     public double estimateScanCost() {
         // TODO: some code goes here
-        return 0;
+        return 2.0 * ioCostPerPage * file.numPages();
     }
 
     /**
@@ -144,11 +185,11 @@ public class TableStats {
      *
      * @param selectivityFactor The selectivity of any predicates over the table
      * @return The estimated cardinality of the scan with the specified
-     *         selectivityFactor
+     * selectivityFactor
      */
     public int estimateTableCardinality(double selectivityFactor) {
         // TODO: some code goes here
-        return 0;
+        return (int) (ntups * selectivityFactor);
     }
 
     /**
@@ -162,6 +203,11 @@ public class TableStats {
      */
     public double avgSelectivity(int field, Predicate.Op op) {
         // TODO: some code goes here
+//        if (tupDesc.getFieldType(field).equals(Type.INT_TYPE)) {
+//            return intHistogramMap.get(field).avgSelectivity();
+//        } else {
+//            return stringHistogramMap.get(field).avgSelectivity();
+//        }
         return 1.0;
     }
 
@@ -173,11 +219,15 @@ public class TableStats {
      * @param op       The logical operation in the predicate
      * @param constant The value against which the field is compared
      * @return The estimated selectivity (fraction of tuples that satisfy) the
-     *         predicate
+     * predicate
      */
     public double estimateSelectivity(int field, Predicate.Op op, Field constant) {
         // TODO: some code goes here
-        return 1.0;
+        if (tupDesc.getFieldType(field).equals(Type.INT_TYPE)) {
+            return intHistogramMap.get(field).estimateSelectivity(op, ((IntField) constant).getValue());
+        } else {
+            return stringHistogramMap.get(field).estimateSelectivity(op, ((StringField) constant).getValue());
+        }
     }
 
     /**
@@ -185,7 +235,7 @@ public class TableStats {
      */
     public int totalTuples() {
         // TODO: some code goes here
-        return 0;
+        return ntups;
     }
 
 }

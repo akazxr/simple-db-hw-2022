@@ -75,6 +75,7 @@ public class IntHistogram {
      */
     public double estimateSelectivity(Predicate.Op op, int v) {
         // TODO: some code goes here
+        // TODO: 有部分问题，应该是加 equals/2
         if (op.equals(Op.GREATER_THAN)) {
             if (v >= max) {
                 return 0.0;
