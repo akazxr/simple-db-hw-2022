@@ -39,7 +39,11 @@ public class IntHistogram {
         this.buckets = new int[buckets];
         this.min = min;
         this.max = max;
-        this.width = 1.0 * (max - min) / buckets;
+        // 10个桶， min 1， max 10
+        // bucket1, bucket2, bucket3,...,bucket10
+        // 所以要max - min + 1
+        // 又因为桶宽如果是小数，会导致数据误差偏大，所以桶宽最小应该为1
+        this.width = Math.max(1.0, 1.0 * (max - min + 1) / buckets);
         ntups = 0;
     }
 
@@ -75,9 +79,8 @@ public class IntHistogram {
      */
     public double estimateSelectivity(Predicate.Op op, int v) {
         // TODO: some code goes here
-        // TODO: 有部分问题，应该是加 equals/2
         if (op.equals(Op.GREATER_THAN)) {
-            if (v >= max) {
+            if (v > max) {
                 return 0.0;
             }
             if (v <= min) {
@@ -92,6 +95,7 @@ public class IntHistogram {
             double b_f = 1.0 * buckets[index] / ntups;
             return b_part * b_f + selectivity;
         } else if (op.equals(Op.GREATER_THAN_OR_EQ)) {
+            // 因为width至少为1，所以>=可以写为>和=的和
             return estimateSelectivity(Op.GREATER_THAN, v) + estimateSelectivity(Op.EQUALS, v);
         } else if (op.equals(Op.LESS_THAN)) {
             return 1 - estimateSelectivity(Op.GREATER_THAN, v);
