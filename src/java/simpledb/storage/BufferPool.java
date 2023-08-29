@@ -1,5 +1,6 @@
 package simpledb.storage;
 
+import jdk.nashorn.internal.objects.annotations.Getter;
 import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.DeadlockException;
@@ -33,7 +34,7 @@ public class BufferPool {
 
     private static int pageSize = DEFAULT_PAGE_SIZE;
 
-    private LRU lru;
+    public LRU lru;
 
     private int numPages;
 
@@ -148,6 +149,10 @@ public class BufferPool {
     public void transactionComplete(TransactionId tid, boolean commit) {
         // TODO: some code goes here
         // not necessary for lab1|lab2
+        Set<PageId> pageIds = LockManager.PAGELOCKS.keySet();
+        for (PageId pid : pageIds) {
+            LockManager.releaseLock(tid, pid);
+        }
     }
 
     /**
@@ -232,6 +237,8 @@ public class BufferPool {
     public synchronized void removePage(PageId pid) {
         // TODO: some code goes here
         // not necessary for lab1
+
+        LockManager.releaseLocksOnPage(pid);
     }
 
     /**

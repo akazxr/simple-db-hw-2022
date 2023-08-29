@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class LockManager {
 
-    static Map<PageId, Map<TransactionId, Lock>> PAGELOCKS = new ConcurrentHashMap<>();
+    public static Map<PageId, Map<TransactionId, Lock>> PAGELOCKS = new ConcurrentHashMap<>();
 
     public static synchronized boolean acquireLock(Lock acquiredLock, TransactionId transactionId, PageId pageId)
         throws TransactionAbortedException {
@@ -90,6 +90,16 @@ public class LockManager {
             return;
         }
         locksOnPage.remove(transactionId);
+    }
+
+    public static synchronized void releaseLocksOnPage(PageId pageId) {
+        if (PAGELOCKS == null || PAGELOCKS.isEmpty()) {
+            return;
+        }
+        if (!PAGELOCKS.containsKey(pageId)) {
+            return;
+        }
+        PAGELOCKS.remove(pageId);
     }
 
     public static boolean holdsLock(TransactionId tid, PageId p) {

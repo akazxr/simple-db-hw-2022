@@ -1,5 +1,6 @@
 package simpledb.storage;
 
+import jdk.nashorn.internal.objects.annotations.Getter;
 import simpledb.common.Database;
 
 import java.util.Map;
@@ -25,7 +26,7 @@ public class LRU {
         }
     }
 
-    class NodeList {
+    public class NodeList {
         int size;
 
         Node head;

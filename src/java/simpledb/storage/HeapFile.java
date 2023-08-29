@@ -144,6 +144,7 @@ public class HeapFile implements DbFile {
             HeapPageId pid = new HeapPageId(this.getId(), i);
             HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
             if (page.getNumUnusedSlots() == 0) {
+                Database.getBufferPool().unsafeReleasePage(tid, page.getId());
                 continue;
             }
             page.insertTuple(t);
