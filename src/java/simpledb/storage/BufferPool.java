@@ -4,6 +4,8 @@ import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.DeadlockException;
 import simpledb.common.Permissions;
+import simpledb.transaction.Lock;
+import simpledb.transaction.LockManager;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
@@ -83,6 +85,21 @@ public class BufferPool {
      */
     public Page getPage(TransactionId tid, PageId pid, Permissions perm)
             throws TransactionAbortedException, DbException {
+        Lock acquiredLock;
+        if (perm.equals(Permissions.READ_ONLY)) {
+            acquiredLock = new Lock(Lock.LockEnum.SHARE, tid);
+        } else {
+            acquiredLock = new Lock(Lock.LockEnum.EXCLUSIVE, tid);
+        }
+        long startTime = System.currentTimeMillis();
+        while (true) {
+            if (LockManager.acquireLock(acquiredLock, tid, pid)) {
+                break;
+            }
+            if ((System.currentTimeMillis() - startTime) > 1000) {
+                throw new TransactionAbortedException();
+            }
+        }
         lru.put(pid);
         return lru.get(pid).page;
     }
@@ -99,6 +116,7 @@ public class BufferPool {
     public void unsafeReleasePage(TransactionId tid, PageId pid) {
         // TODO: some code goes here
         // not necessary for lab1|lab2
+        LockManager.releaseLock(tid, pid);
     }
 
     /**
@@ -117,7 +135,7 @@ public class BufferPool {
     public boolean holdsLock(TransactionId tid, PageId p) {
         // TODO: some code goes here
         // not necessary for lab1|lab2
-        return false;
+        return LockManager.holdsLock(tid, p);
     }
 
     /**

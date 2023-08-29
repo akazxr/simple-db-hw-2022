@@ -22,9 +22,9 @@ public class Lock {
         this.transactionId = transactionId;
     }
 
-    LockEnum lockEnum;
+    private LockEnum lockEnum;
 
-    TransactionId transactionId;
+    private TransactionId transactionId;
 
     public enum LockEnum {
         SHARE,
