@@ -95,7 +95,12 @@ public class LRU {
 
     public Node get(PageId pid) {
         if (!map.containsKey(pid)) {
-            throw new NoSuchElementException("no such page in buffer pool");
+            // throw new NoSuchElementException("no such page in buffer pool");
+            DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
+            Page page = dbFile.readPage(pid);
+            Node newNode = new Node(pid, page);
+            nodeList.addFirst(newNode);
+            map.put(pid, newNode);
         }
         Node node = map.get(pid);
         nodeList.remove(node);
@@ -103,7 +108,7 @@ public class LRU {
         return node;
     }
 
-    public void put(PageId pid) {
+    public void put(PageId pid) throws DbException {
         DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
         Page page = map.containsKey(pid) ? map.get(pid).page : dbFile.readPage(pid);
         if (map.containsKey(pid)) {
@@ -114,11 +119,11 @@ public class LRU {
         nodeList.addFirst(newNode);
         map.put(pid, newNode);
         if (nodeList.size > capacity) {
-            removeLast();
+            removeLastUndirty();
         }
     }
 
-    public void put(PageId pid, Node newNode) {
+    public void put(PageId pid, Node newNode) throws DbException {
         if (map.containsKey(pid)) {
             nodeList.remove(map.get(pid));
             map.remove(pid);
@@ -126,7 +131,7 @@ public class LRU {
         nodeList.addFirst(newNode);
         map.put(pid, newNode);
         if (nodeList.size > capacity) {
-            removeLast();
+            removeLastUndirty();
         }
     }
 

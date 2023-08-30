@@ -263,7 +263,8 @@ public class BufferPool {
     private synchronized void flushPage(PageId pid) throws IOException {
         // TODO: some code goes here
         // not necessary for lab1
-        Page page = lru.map.get(pid).page;
+        // Page page = lru.map.get(pid).page;
+        Page page = lru.get(pid).page;
         int table = pid.getTableId();
         DbFile file = Database.getCatalog().getDatabaseFile(table);
         file.writePage(page);
