@@ -128,6 +128,7 @@ public class BufferPool {
     public void transactionComplete(TransactionId tid) {
         // TODO: some code goes here
         // not necessary for lab1|lab2
+        transactionComplete(tid, true);
     }
 
     /**
@@ -149,9 +150,23 @@ public class BufferPool {
     public void transactionComplete(TransactionId tid, boolean commit) {
         // TODO: some code goes here
         // not necessary for lab1|lab2
-        Set<PageId> pageIds = LockManager.PAGELOCKS.keySet();
-        for (PageId pid : pageIds) {
-            LockManager.releaseLock(tid, pid);
+        try {
+            Set<PageId> pageIds = LockManager.PAGELOCKS.keySet();
+            if (commit) {
+                for (PageId pid : pageIds) {
+                    if (holdsLock(tid, pid)) {
+                        flushPage(pid);
+                    }
+                }
+            } else {
+                for (PageId pid : pageIds) {
+                    if (holdsLock(tid, pid)) {
+                        removePage(pid);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -222,7 +237,6 @@ public class BufferPool {
                 e.printStackTrace();
             }
         });
-
     }
 
     /**
@@ -237,7 +251,7 @@ public class BufferPool {
     public synchronized void removePage(PageId pid) {
         // TODO: some code goes here
         // not necessary for lab1
-
+        lru.remove(pid);
         LockManager.releaseLocksOnPage(pid);
     }
 
@@ -253,6 +267,7 @@ public class BufferPool {
         int table = pid.getTableId();
         DbFile file = Database.getCatalog().getDatabaseFile(table);
         file.writePage(page);
+        removePage(pid);
     }
 
     /**
@@ -270,12 +285,9 @@ public class BufferPool {
     private synchronized void evictPage() throws DbException {
         // TODO: some code goes here
         // not necessary for lab1
-        PageId pageId = lru.removeLast();
-        try {
-            flushPage(pageId);
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (lru.getSize() <= numPages) {
+            return;
         }
+        lru.removeLastUndirty();
     }
-
 }

@@ -2,6 +2,7 @@ package simpledb.storage;
 
 import jdk.nashorn.internal.objects.annotations.Getter;
 import simpledb.common.Database;
+import simpledb.common.DbException;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -62,6 +63,18 @@ public class LRU {
             remove(last);
             return last;
         }
+
+        /**
+         * 获取最后一个node，判断是否是脏页
+         *
+         * @return Node
+         */
+        public Node getLast() {
+            if (head.next == tail) {
+                return null;
+            }
+            return tail.prev;
+        }
     }
 
     public Map<PageId, Node> map;
@@ -69,6 +82,10 @@ public class LRU {
     private int capacity;
 
     private NodeList nodeList;
+
+    public int getSize() {
+        return nodeList.size;
+    }
 
     public LRU(int capacity) {
         this.capacity = capacity;
@@ -113,10 +130,27 @@ public class LRU {
         }
     }
 
+    public void remove(PageId pid) {
+        if (map.containsKey(pid)) {
+            nodeList.remove(map.get(pid));
+            map.remove(pid);
+        }
+    }
+
     public PageId removeLast() {
         Node last = nodeList.removeLast();
         map.remove(last.pid);
         return last.pid;
     }
 
+    public void removeLastUndirty() throws DbException {
+        Node last = nodeList.getLast();
+        while (last.page.isDirty() != null) {
+            if (last.prev.equals(nodeList.head)) {
+                throw new DbException("all pages in the buffer pool are dirty");
+            }
+            last = last.prev;
+        }
+        remove(last.pid);
+    }
 }

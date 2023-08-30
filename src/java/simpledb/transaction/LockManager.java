@@ -93,12 +93,6 @@ public class LockManager {
     }
 
     public static synchronized void releaseLocksOnPage(PageId pageId) {
-        if (PAGELOCKS == null || PAGELOCKS.isEmpty()) {
-            return;
-        }
-        if (!PAGELOCKS.containsKey(pageId)) {
-            return;
-        }
         PAGELOCKS.remove(pageId);
     }
 
