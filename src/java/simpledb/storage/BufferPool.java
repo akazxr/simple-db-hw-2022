@@ -97,7 +97,7 @@ public class BufferPool {
             if (LockManager.acquireLock(acquiredLock, tid, pid)) {
                 break;
             }
-            if ((System.currentTimeMillis() - startTime) > 1000) {
+            if ((System.currentTimeMillis() - startTime) > 10000) {
                 throw new TransactionAbortedException();
             }
         }
@@ -267,7 +267,8 @@ public class BufferPool {
         int table = pid.getTableId();
         DbFile file = Database.getCatalog().getDatabaseFile(table);
         file.writePage(page);
-        removePage(pid);
+        LockManager.releaseLocksOnPage(pid);
+        // removePage(pid);
     }
 
     /**
