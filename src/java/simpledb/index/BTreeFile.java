@@ -260,6 +260,7 @@ public class BTreeFile implements DbFile {
             half--;
             iterator.next();
         }
+        // key是分裂之后叶子节点第一个
         Field key = null;
         while (iterator.hasNext()) {
             Tuple tuple = iterator.next();
@@ -276,17 +277,24 @@ public class BTreeFile implements DbFile {
             originalRightSibling.setLeftSiblingId(newPage.getId());
             // dirtypages.put(rightSiblingId, originalRightSibling);
         }
-        newPage.setRightSiblingId(page.getId());
+        newPage.setLeftSiblingId(page.getId());
         page.setRightSiblingId(newPage.getId());
         // dirtypages.put(page.getId(), page);
         // dirtypages.put(newPage.getId(), newPage);
 
-        BTreeInternalPage newInternalPage = getParentWithEmptySlots(tid, dirtypages, page.getParentId(), key);
-        updateParentPointer(tid, dirtypages, newInternalPage.getId(), page.getId());
-        updateParentPointer(tid, dirtypages, newInternalPage.getId(), newPage.getId());
+        BTreeInternalPage parentPage = getParentWithEmptySlots(tid, dirtypages, page.getParentId(), key);
+        updateParentPointer(tid, dirtypages, parentPage.getId(), page.getId());
+        updateParentPointer(tid, dirtypages, parentPage.getId(), newPage.getId());
 
+        BTreeEntry bTreeEntry = new BTreeEntry(key, page.getId(), newPage.getId());
+        parentPage.insertEntry(bTreeEntry);
+        dirtypages.put(parentPage.getId(), parentPage);
 
-
+        if (key.compare(Op.LESS_THAN, field)) {
+            return newPage;
+        } else {
+            return page;
+        }
     }
 
     /**
@@ -322,8 +330,24 @@ public class BTreeFile implements DbFile {
         // the parent pointers of all the children moving to the new page.  updateParentPointers()
         // will be useful here.  Return the page into which an entry with the given key field
         // should be inserted.
-        return null;
+        BTreeInternalPage newPage = (BTreeInternalPage) getEmptyPage(tid, dirtypages,BTreePageId.INTERNAL);
+        Iterator<BTreeEntry> iterator = page.iterator();
+        int entryNum = page.getNumEntries();
+        int half = entryNum / 2;
+        while (half > 0) {
+            half--;
+            iterator.next();
+        }
+        while (iterator.hasNext()) {
+            iterator.next();
+        }
+        BTreeEntry upEntry = iterator.next();
+        while (iterator.hasNext()) {
+
+        }
+
     }
+
 
     /**
      * Method to encapsulate the process of getting a parent page ready to accept new entries.
