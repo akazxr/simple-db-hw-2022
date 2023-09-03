@@ -252,7 +252,40 @@ public class BTreeFile implements DbFile {
         // the new entry.  getParentWithEmtpySlots() will be useful here.  Don't forget to update
         // the sibling pointers of all the affected leaf pages.  Return the page into which a
         // tuple with the given key field should be inserted.
-        return null;
+        BTreeLeafPage newPage = (BTreeLeafPage) getEmptyPage(tid, dirtypages, BTreePageId.LEAF);
+        int num = page.getNumTuples();
+        Iterator<Tuple> iterator = page.iterator();
+        int half = num / 2;
+        while (half > 0) {
+            half--;
+            iterator.next();
+        }
+        Field key = null;
+        while (iterator.hasNext()) {
+            Tuple tuple = iterator.next();
+            if (key == null) {
+                key = tuple.getField(page.keyField);
+            }
+            newPage.insertTuple(tuple);
+            page.deleteTuple(tuple);
+        }
+        BTreePageId rightSiblingId = page.getRightSiblingId();
+        if (rightSiblingId != null) {
+            newPage.setRightSiblingId(rightSiblingId);
+            BTreeLeafPage originalRightSibling = (BTreeLeafPage) getPage(tid, dirtypages, rightSiblingId, Permissions.READ_WRITE);
+            originalRightSibling.setLeftSiblingId(newPage.getId());
+            // dirtypages.put(rightSiblingId, originalRightSibling);
+        }
+        newPage.setRightSiblingId(page.getId());
+        page.setRightSiblingId(newPage.getId());
+        // dirtypages.put(page.getId(), page);
+        // dirtypages.put(newPage.getId(), newPage);
+
+        BTreeInternalPage newInternalPage = getParentWithEmptySlots(tid, dirtypages, page.getParentId(), key);
+        updateParentPointer(tid, dirtypages, newInternalPage.getId(), page.getId());
+        updateParentPointer(tid, dirtypages, newInternalPage.getId(), newPage.getId());
+
+
 
     }
 
