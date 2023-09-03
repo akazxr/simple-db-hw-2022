@@ -275,12 +275,12 @@ public class BTreeFile implements DbFile {
             newPage.setRightSiblingId(rightSiblingId);
             BTreeLeafPage originalRightSibling = (BTreeLeafPage) getPage(tid, dirtypages, rightSiblingId, Permissions.READ_WRITE);
             originalRightSibling.setLeftSiblingId(newPage.getId());
-            // dirtypages.put(rightSiblingId, originalRightSibling);
+            dirtypages.put(rightSiblingId, originalRightSibling);
         }
         newPage.setLeftSiblingId(page.getId());
         page.setRightSiblingId(newPage.getId());
-        // dirtypages.put(page.getId(), page);
-        // dirtypages.put(newPage.getId(), newPage);
+        dirtypages.put(page.getId(), page);
+        dirtypages.put(newPage.getId(), newPage);
 
         BTreeInternalPage parentPage = getParentWithEmptySlots(tid, dirtypages, page.getParentId(), key);
         updateParentPointer(tid, dirtypages, parentPage.getId(), page.getId());
@@ -338,14 +338,29 @@ public class BTreeFile implements DbFile {
             half--;
             iterator.next();
         }
-        while (iterator.hasNext()) {
-            iterator.next();
-        }
         BTreeEntry upEntry = iterator.next();
+        page.deleteKeyAndRightChild(upEntry);
+        upEntry.setLeftChild(page.getId());
+        upEntry.setRightChild(newPage.getId());
         while (iterator.hasNext()) {
-
+            BTreeEntry bTreeEntry = iterator.next();
+            newPage.insertEntry(bTreeEntry);
+            page.deleteKeyAndRightChild(bTreeEntry);
         }
+        BTreeInternalPage parent = getParentWithEmptySlots(tid, dirtypages, page.getParentId(), upEntry.getKey());
+        parent.insertEntry(upEntry);
+        updateParentPointers(tid, dirtypages, page);
+        updateParentPointers(tid, dirtypages, newPage);
+        updateParentPointers(tid, dirtypages, parent);
 
+        dirtypages.put(page.getId(), page);
+        dirtypages.put(newPage.getId(), newPage);
+        dirtypages.put(parent.getId(), parent);
+        if (field.compare(Op.LESS_THAN, upEntry.getKey())) {
+            return page;
+        } else {
+            return newPage;
+        }
     }
 
 
