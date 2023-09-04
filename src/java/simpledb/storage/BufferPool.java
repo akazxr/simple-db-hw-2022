@@ -189,7 +189,7 @@ public class BufferPool {
             throws DbException, IOException, TransactionAbortedException {
         // TODO: some code goes here
         // not necessary for lab1
-        HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
+        DbFile file = Database.getCatalog().getDatabaseFile(tableId);
         List<Page> pages = file.insertTuple(tid, t);
         for (int i = 0; i < pages.size(); i++) {
             pages.get(i).markDirty(true, tid);
@@ -214,7 +214,7 @@ public class BufferPool {
             throws DbException, IOException, TransactionAbortedException {
         // TODO: some code goes here
         // not necessary for lab1
-        HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId());
+        DbFile file = Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId());
         List<Page> pages = file.deleteTuple(tid, t);
         for (int i = 0; i < pages.size(); i++) {
             pages.get(i).markDirty(true, tid);
