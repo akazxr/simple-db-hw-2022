@@ -808,8 +808,6 @@ public class BTreeFile implements DbFile {
         dirtypages.put(rightSibling.getId(), rightSibling);
         dirtypages.put(parent.getId(), parent);
         updateParentPointers(tid, dirtypages, page);
-
-
     }
 
     /**
@@ -839,6 +837,23 @@ public class BTreeFile implements DbFile {
         // the sibling pointers, and make the right page available for reuse.
         // Delete the entry in the parent corresponding to the two pages that are merging -
         // deleteParentEntry() will be useful here
+        Iterator<Tuple> rightIterator = rightPage.iterator();
+        while (rightIterator.hasNext()) {
+            Tuple nextRightTuple = rightIterator.next();
+            rightPage.deleteTuple(nextRightTuple);
+            leftPage.insertTuple(nextRightTuple);
+        }
+        deleteParentEntry(tid, dirtypages, leftPage, parent, parentEntry);
+        setEmptyPage(tid, dirtypages, rightPage.getId().getPageNumber());
+        BTreePageId rightSiblingId = rightPage.getRightSiblingId();
+        if (rightSiblingId != null) {
+            BTreeLeafPage rightSiblingPage = (BTreeLeafPage) getPage(tid, dirtypages, rightSiblingId, Permissions.READ_WRITE);
+            leftPage.setRightSiblingId(rightSiblingId);
+            rightSiblingPage.setLeftSiblingId(leftPage.getId());
+            dirtypages.put(rightSiblingId, rightSiblingPage);
+        } else {
+            leftPage.setRightSiblingId(null);
+        }
     }
 
     /**
@@ -871,6 +886,20 @@ public class BTreeFile implements DbFile {
         // and make the right page available for reuse
         // Delete the entry in the parent corresponding to the two pages that are merging -
         // deleteParentEntry() will be useful here
+        Iterator<BTreeEntry> rightIterator = rightPage.iterator();
+        BTreeEntry rightEntry = rightIterator.next();
+        BTreeEntry rotatedUpEntry = new BTreeEntry(parentEntry.getKey(),
+            leftPage.reverseIterator().next().getRightChild(), rightEntry.getLeftChild());
+        leftPage.insertEntry(rotatedUpEntry);
+        while (rightIterator.hasNext()) {
+            rightPage.deleteKeyAndRightChild(rightEntry);
+            leftPage.insertEntry(rightEntry);
+            rightEntry = rightIterator.next();
+        }
+        deleteParentEntry(tid, dirtypages, leftPage, parent, parentEntry);
+        setEmptyPage(tid, dirtypages, rightPage.getId().getPageNumber());
+        updateParentPointers(tid, dirtypages, leftPage);
+        dirtypages.put(leftPage.getId(), leftPage);
     }
 
     /**
